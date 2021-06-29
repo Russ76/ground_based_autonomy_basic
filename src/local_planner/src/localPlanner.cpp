@@ -69,13 +69,14 @@ bool pathRangeBySpeed = true;
 bool pathCropByGoal = true;
 bool autonomyMode = false;
 double autonomySpeed = 1.0;
-double joyToSpeedDelay = 5.0;
+double joyToSpeedDelay = 2.0;
 double joyToCheckObstacleDelay = 5.0;
 double goalClearRange = 0.5;
 double goalX = 0;
 double goalY = 0;
 
 float joySpeed = 0;
+float joySpeedRaw = 0;
 float joyDir = 0;
 
 const int pathNum = 343;
@@ -209,7 +210,8 @@ void joystickHandler(const sensor_msgs::Joy::ConstPtr& joy)
 {
   joyTime = ros::Time::now().toSec();
 
-  joySpeed = sqrt(joy->axes[3] * joy->axes[3] + joy->axes[4] * joy->axes[4]);
+  joySpeedRaw = sqrt(joy->axes[3] * joy->axes[3] + joy->axes[4] * joy->axes[4]);
+  joySpeed = joySpeedRaw;
   if (joySpeed > 1.0) joySpeed = 1.0;
   if (joy->axes[4] == 0) joySpeed = 0;
 
@@ -243,7 +245,7 @@ void speedHandler(const std_msgs::Float32::ConstPtr& speed)
 {
   double speedTime = ros::Time::now().toSec();
 
-  if (autonomyMode && speedTime - joyTime > joyToSpeedDelay) {
+  if (autonomyMode && speedTime - joyTime > joyToSpeedDelay && joySpeedRaw == 0) {
     joySpeed = speed->data / maxSpeed;
 
     if (joySpeed < 0) joySpeed = 0;
@@ -655,9 +657,9 @@ int main(int argc, char** argv)
       int boundaryCloudSize = boundaryCloud->points.size();
       for (int i = 0; i < boundaryCloudSize; i++) {
         point.x = ((boundaryCloud->points[i].x - vehicleX) * cosVehicleYaw 
-                + (boundaryCloud->points[i].y - vehicleY) * sinVehicleYaw) / pathScale;
+                + (boundaryCloud->points[i].y - vehicleY) * sinVehicleYaw);
         point.y = (-(boundaryCloud->points[i].x - vehicleX) * sinVehicleYaw 
-                + (boundaryCloud->points[i].y - vehicleY) * cosVehicleYaw) / pathScale;
+                + (boundaryCloud->points[i].y - vehicleY) * cosVehicleYaw);
         point.z = boundaryCloud->points[i].z;
         point.intensity = boundaryCloud->points[i].intensity;
 
@@ -670,9 +672,9 @@ int main(int argc, char** argv)
       int addedObstaclesSize = addedObstacles->points.size();
       for (int i = 0; i < addedObstaclesSize; i++) {
         point.x = ((addedObstacles->points[i].x - vehicleX) * cosVehicleYaw 
-                + (addedObstacles->points[i].y - vehicleY) * sinVehicleYaw) / pathScale;
+                + (addedObstacles->points[i].y - vehicleY) * sinVehicleYaw);
         point.y = (-(addedObstacles->points[i].x - vehicleX) * sinVehicleYaw 
-                + (addedObstacles->points[i].y - vehicleY) * cosVehicleYaw) / pathScale;
+                + (addedObstacles->points[i].y - vehicleY) * cosVehicleYaw);
         point.z = addedObstacles->points[i].z;
         point.intensity = addedObstacles->points[i].intensity;
 
